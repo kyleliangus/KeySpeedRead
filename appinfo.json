@@ -1,5 +1,8 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "KEY_ABSTRACT": 1,
+        "KEY_TITLE": 0
+    },
     "capabilities": [
         ""
     ],
@@ -11,6 +14,10 @@
     },
     "sdkVersion": "3",
     "shortName": "KeySpeedRead",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
     "uuid": "76d653df-3b9b-4851-a25c-68d02555fcb7",
     "versionLabel": "1.0",
     "watchapp": {
