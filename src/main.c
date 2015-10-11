@@ -1,8 +1,9 @@
 #include <pebble.h>
 #include <time.h>
+#define KEY_TITLE 0
+#define KEY_ABSTRACT 1
 
-#define KEY_ABSTRACT 0
-#define KEY_TITLE 1
+
 //#define KEY_DATA 5
 
 Window *window;
@@ -22,14 +23,14 @@ static void word_window_load(Window *window)
 {
   word_layer = text_layer_create(GRect(0, 50, 144, 50));
   text_layer_set_background_color(word_layer, GColorClear);
-  text_layer_set_text_color(word_layer, GColorWhite);
-  text_layer_set_text_alignment(word_layer, GTextAlignmentCenter);
+  text_layer_set_text_color(word_layer, GColorBlack);
+  //text_layer_set_text_alignment(word_layer, GTextAlignmentCenter);
   text_layer_set_text(word_layer, "Loading...");
   
   title_layer = text_layer_create(GRect(0, 10, 144, 30));
   text_layer_set_background_color(title_layer, GColorClear);
-  text_layer_set_text_color(title_layer, GColorWhite);
-  text_layer_set_text_alignment(title_layer, GTextAlignmentCenter);
+  text_layer_set_text_color(title_layer, GColorBlack);
+  //text_layer_set_text_alignment(title_layer, GTextAlignmentCenter);
   text_layer_set_text(title_layer, "Loading...");
   text_layer_set_font(title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 }
@@ -43,31 +44,39 @@ static void word_window_unload(Window *window)
 
 
 // get input from Javascript
+static char abstract[32];
+static char title[32];
+
+void refresh( void *data ) { 
+	layer_mark_dirty( text_layer_get_layer( word_layer ) );
+}
+	
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+	
   // Read first item
   Tuple *t = dict_read_first(iterator);
 
-  static char abstract[32];
-  static char title[32];
-  
+  text_layer_set_text( title_layer, title );
+	
   // For all items
   while(t != NULL) {
     // Which key was received?
+		APP_LOG(APP_LOG_LEVEL_DEBUG, "Loop index now %s", t->value->cstring);
     switch(t->key) {
     case KEY_ABSTRACT:
-          snprintf(abstract, sizeof(abstract), "%s", t->value->cstring);
+          snprintf(abstract, sizeof(abstract), "%s", t->value->cstring);			
       break;
     case KEY_TITLE:
           snprintf(title, sizeof(title), "%s", t->value->cstring);
       break;
     default:
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
+      snprintf( title, sizeof(abstract), "%s", t->value->cstring );
       break;
     }
-    text_layer_set_text( word_layer, abstract );
-    text_layer_set_text( title_layer, title );
-    psleep( 100*10*( strlen(abstract) ) );
-    // Look for next item
+		text_layer_set_text( word_layer, abstract );// Look for next item
+    app_timer_register( (200+10*( strlen(abstract) )), (AppTimerCallback) refresh, NULL);
+    
+		psleep(500);
     t = dict_read_next(iterator);
   }
   window_stack_pop(true);  
@@ -116,8 +125,7 @@ uint16_t num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *
 
 void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context)
 {
-    //Get which row
-    int which = cell_index->row;
+	  int which = cell_index->row;
  
     //The array that will hold the on/off vibration times
     uint32_t segments[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -140,6 +148,7 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
   
     psleep( 1000 );
   
+
     // create window to show
     word_window = window_create(); 
     window_set_window_handlers(word_window, (WindowHandlers) {
@@ -149,12 +158,26 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
     window_stack_push(word_window, true);  
     // create window to show
   
+		
     app_message_register_inbox_received(inbox_received_callback);
     app_message_register_inbox_dropped(inbox_dropped_callback);
     app_message_register_outbox_failed(outbox_failed_callback);
-    app_message_register_outbox_sent(outbox_sent_callback);
-  
-    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+    app_message_register_outbox_sent(outbox_sent_callback);		
+		//APP_LOG(APP_LOG_LEVEL_DEBUG, "Loop index now %d", 1);
+
+		// Open AppMessage
+		app_message_open( app_message_inbox_size_maximum(), app_message_outbox_size_maximum() );
+	
+		// Begin dictionary
+  	DictionaryIterator *iter;
+  	app_message_outbox_begin(&iter);
+
+  	// Add a key-value pair
+  	dict_write_uint8(iter, 0, 0);
+
+  	// Send the message!
+  	app_message_outbox_send();
+
 }
 // Menu Layout
 
@@ -283,11 +306,7 @@ void splash_init()
 
 int main(void)
 {
-  // splash init
-  //splash_init(splash_window);
-  //psleep(3000);
   init();
   app_event_loop();
-  //deinit(splash_window);
   deinit(window);
 }
