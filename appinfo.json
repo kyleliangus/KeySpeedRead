@@ -1,0 +1,19 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "kyleliangus@gmail.com",
+    "longName": "KeySpeedRead",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "sdkVersion": "3",
+    "shortName": "KeySpeedRead",
+    "uuid": "76d653df-3b9b-4851-a25c-68d02555fcb7",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
