@@ -1,5 +1,8 @@
 #include <pebble.h>
 #include <time.h>
+
+#define KEY_ABSTRACT 0
+#define KEY_TITLE 1
 //#define KEY_DATA 5
 
 Window *window;
@@ -10,6 +13,7 @@ Window *splash_window;
 static TextLayer *splash_layer;
 
 Window *word_window;
+static TextLayer *title_layer;
 static TextLayer *word_layer;
 
 
@@ -21,11 +25,19 @@ static void word_window_load(Window *window)
   text_layer_set_text_color(word_layer, GColorWhite);
   text_layer_set_text_alignment(word_layer, GTextAlignmentCenter);
   text_layer_set_text(word_layer, "Loading...");
+  
+  title_layer = text_layer_create(GRect(0, 10, 144, 30));
+  text_layer_set_background_color(title_layer, GColorClear);
+  text_layer_set_text_color(title_layer, GColorWhite);
+  text_layer_set_text_alignment(title_layer, GTextAlignmentCenter);
+  text_layer_set_text(title_layer, "Loading...");
+  text_layer_set_font(title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 }
 
 static void word_window_unload(Window *window)
 {
   text_layer_destroy(word_layer);
+  text_layer_destroy(title_layer);
 }
 // window showing key speed read
 
@@ -35,11 +47,26 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   // Read first item
   Tuple *t = dict_read_first(iterator);
 
+  static char abstract[32];
+  static char title[32];
+  
   // For all items
   while(t != NULL) {
     // Which key was received?
-    
-
+    switch(t->key) {
+    case KEY_ABSTRACT:
+          snprintf(abstract, sizeof(abstract), "%s", t->value->cstring);
+      break;
+    case KEY_TITLE:
+          snprintf(title, sizeof(title), "%s", t->value->cstring);
+      break;
+    default:
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
+      break;
+    }
+    text_layer_set_text( word_layer, abstract );
+    text_layer_set_text( title_layer, title );
+    psleep( 100*10*( strlen(abstract) ) );
     // Look for next item
     t = dict_read_next(iterator);
   }
@@ -111,6 +138,7 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
     //Do the vibration pattern!
     vibes_enqueue_custom_pattern(pattern);
   
+    psleep( 1000 );
   
     // create window to show
     word_window = window_create(); 
